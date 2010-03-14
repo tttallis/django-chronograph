@@ -86,8 +86,11 @@ class Job(models.Model):
         elif delta.seconds < 60:
             # Adapted from django.utils.timesince
             count = lambda n: ungettext('second', 'seconds', n)
-            return ugettext('%(number)d %(type)s') % {'number': delta.seconds,
-                                                      'type': count(delta.seconds)}
+            return ugettext('%(number)d %(type)s') % {
+                'number': delta.seconds,
+                'type': count(delta.seconds)
+            }
+        
         return timeuntil(self.next_run)
     get_timeuntil.short_description = _('time until next run')
     timeuntil = property(get_timeuntil)
