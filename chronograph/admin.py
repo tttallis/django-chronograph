@@ -1,12 +1,15 @@
 from django.contrib import admin
 from django.db import models
 from django import forms
-from django.utils.translation import ungettext, ugettext_lazy as _
+from django.utils.translation import ungettext, ugettext_lazy as _, get_date_formats
 from django.http import HttpResponseRedirect, Http404, HttpResponse
 from django.conf.urls.defaults import patterns, url
+from django.core.urlresolvers import reverse
 from django.utils.safestring import mark_safe
 from django.forms.util import flatatt
 from django.utils.html import escape
+from django.utils.text import capfirst
+from django.utils import dateformat
 from django.template.defaultfilters import linebreaks
 
 from chronograph.models import Job, Log
@@ -27,9 +30,9 @@ class HTMLWidget(forms.Widget):
         return mark_safe("<div%s>%s</div>" % (flatatt(final_attrs), linebreaks(value)))
 
 class JobAdmin(admin.ModelAdmin):
-    actions = ('run', )
-    list_display = ('job_success', 'name', 'last_run', 'next_run', 'get_timeuntil',
-                    'frequency', 'is_running', 'run_button', 'view_logs_button', 
+    list_display = (
+        'job_success', 'name', 'last_run_with_link', 'next_run', 'get_timeuntil',
+        'frequency', 'is_running', 'run_button', 'view_logs_button', 
     )
     list_display_links = ('name', )
     list_filter = ('last_run_successful', 'frequency', 'disabled')
@@ -50,6 +53,23 @@ class JobAdmin(admin.ModelAdmin):
             'fields': ('frequency', 'next_run', 'params',)
         }),
     )
+    
+    def last_run_with_link(self, obj):
+        format = get_date_formats()[1]
+        value = capfirst(dateformat.format(obj.last_run, format))
+        
+        log_id = obj.log_set.latest('run_date').id
+        
+        try:
+            # Old way
+            url = reverse('chronograph_log_change', args=(log_id,))
+        except:
+            # New way
+            url = reverse('admin:chronograph_log_change', args=(log_id,))
+        
+        return '<a href="%s">%s</a>' % (url, value)
+    last_run_with_link.allow_tags = True
+    last_run_with_link.short_description = 'Last run'
     
     def job_success(self, obj):
         return obj.last_run_successful
