@@ -1,4 +1,6 @@
 from django.db import models
+from django.contrib.auth.models import User
+from django.core.mail import send_mail
 from django.utils.timesince import timeuntil
 from django.utils.translation import ungettext, ugettext, ugettext_lazy as _
 from django.template import loader, Context
@@ -43,7 +45,10 @@ class Job(models.Model):
     disabled = models.BooleanField(default=False, help_text=_('If checked this job will never run.'))
     next_run = models.DateTimeField(_("next run"), blank=True, null=True, help_text=_("If you don't set this it will be determined automatically"))
     last_run = models.DateTimeField(_("last run"), editable=False, blank=True, null=True)
-    is_running = models.BooleanField(default=False, editable=False)
+    is_running = models.BooleanField(_("Running?"), default=False, editable=False)
+    last_run_successful = models.BooleanField(default=True, blank=False, null=False, editable=False)
+    subscribers = models.ManyToManyField(User, blank=True,
+        help_text=_("Selected users will be e-mailed the output of this job.<br />"))
     
     objects = JobManager()
     
@@ -153,6 +158,7 @@ class Job(models.Model):
         self.save()
         try:
             call_command(self.command, *args, **options)
+            self.last_run_successful = True
         except Exception, e:
             # The command failed to run; log the exception
             t = loader.get_template('chronograph/error_message.txt')
@@ -161,6 +167,7 @@ class Job(models.Model):
               'traceback': ['\n'.join(traceback.format_exception(*sys.exc_info()))]
             })
             stderr_str += t.render(c)
+            self.last_run_successful = False
         self.is_running = False
         self.save()
         
@@ -177,8 +184,12 @@ class Job(models.Model):
                 job = self,
                 run_date = run_date,
                 stdout = stdout_str,
-                stderr = stderr_str
+                stderr = stderr_str,
+                success = self.last_run_successful,
             )
+            
+            # Email the log output to any subscribers:
+            log.email_subscribers()
         
         # Redirect output back to default
         sys.stdout = ostdout
@@ -193,9 +204,22 @@ class Log(models.Model):
     run_date = models.DateTimeField(auto_now_add=True)
     stdout = models.TextField(blank=True)
     stderr = models.TextField(blank=True)
+    success = models.BooleanField(default=True, editable=False)
         
     class Meta:
         ordering = ('-run_date',)
     
     def __unicode__(self):
         return u"%s - %s" % (self.job.name, self.run_date)
+    
+    def email_subscribers(self):
+        subscribers = []
+        for user in self.job.subscribers.all():
+            subscribers.append('"%s" <%s>' % (user.get_full_name(), user.email))
+        
+        send_mail(
+            from_email = '"%s" <%s>' % (settings.EMAIL_SENDER, settings.EMAIL_HOST_USER),
+            subject = '%s' % self,
+            recipient_list = subscribers,
+            message = "Ouput:\n%s\nError output:\n%s" % (self.stdout, self.stderr)
+        )
