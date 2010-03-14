@@ -32,12 +32,13 @@ class HTMLWidget(forms.Widget):
 class JobAdmin(admin.ModelAdmin):
     list_display = (
         'job_success', 'name', 'last_run_with_link', 'next_run', 'get_timeuntil',
-        'frequency', 'is_running', 'run_button', 'view_logs_button', 
+        'frequency', 'is_running', 'run_button', 'view_logs_button',
     )
     list_display_links = ('name', )
     list_filter = ('last_run_successful', 'frequency', 'disabled')
     filter_horizontal = ('subscribers',)
     search_fields = ('name', )
+    ordering = ('last_run', )
     
     fieldsets = (
         ('Job Details', {
@@ -70,6 +71,7 @@ class JobAdmin(admin.ModelAdmin):
         return '<a href="%s">%s</a>' % (url, value)
     last_run_with_link.allow_tags = True
     last_run_with_link.short_description = 'Last run'
+    last_run_with_link.admin_order_field = 'last_run'
     
     def job_success(self, obj):
         return obj.last_run_successful
