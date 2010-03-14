@@ -47,8 +47,7 @@ class Job(models.Model):
     last_run = models.DateTimeField(_("last run"), editable=False, blank=True, null=True)
     is_running = models.BooleanField(_("Running?"), default=False, editable=False)
     last_run_successful = models.BooleanField(default=True, blank=False, null=False, editable=False)
-    subscribers = models.ManyToManyField(User, blank=True,
-        help_text=_("Selected users will be e-mailed the output of this job.<br />"))
+    subscribers = models.ManyToManyField(User, blank=True)
     
     objects = JobManager()
     
