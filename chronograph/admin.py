@@ -143,9 +143,6 @@ class LogAdmin(admin.ModelAdmin):
             kwargs['widget'] = HTMLWidget(db_field.rel)
             return db_field.formfield(**kwargs)
         
-        if isinstance(db_field, models.DateTimeField):
-            print 'yup'
-        
         return super(LogAdmin, self).formfield_for_dbfield(db_field, **kwargs)
 
 admin.site.register(Job, JobAdmin)
