@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.db import models
 from django import forms
 from django.utils.translation import ungettext, ugettext_lazy as _
-from django.http import HttpResponseRedirect, Http404
+from django.http import HttpResponseRedirect, Http404, HttpResponse
 from django.conf.urls.defaults import patterns, url
 from django.utils.safestring import mark_safe
 from django.forms.util import flatatt
@@ -27,18 +27,46 @@ class HTMLWidget(forms.Widget):
         return mark_safe("<div%s>%s</div>" % (flatatt(final_attrs), linebreaks(value)))
 
 class JobAdmin(admin.ModelAdmin):
-    list_display = ('name', 'next_run', 'last_run', 'frequency', 'params', 'get_timeuntil', 'is_running')
-    list_filter = ('frequency', 'disabled',)
+    actions = ('run', )
+    list_display = ('job_success', 'name', 'last_run', 'next_run', 'get_timeuntil',
+                    'frequency', 'is_running', 'run_button', 'view_logs_button', 
+    )
+    list_display_links = ('name', )
+    list_filter = ('last_run_successful', 'frequency', 'disabled')
+    filter_horizontal = ('subscribers',)
+    search_fields = ('name', )
     
     fieldsets = (
-        (None, {
-            'fields': ('name', ('command', 'args',), 'disabled',)
+        ('Job Details', {
+            'classes': ('wide',),
+            'fields': ('name', 'command', 'args', 'disabled',)
+        }),
+        ('E-mail subscriptions', {
+            'classes': ('wide',),
+            'fields': ('subscribers',)
         }),
         ('Frequency options', {
             'classes': ('wide',),
             'fields': ('frequency', 'next_run', 'params',)
         }),
     )
+    
+    def job_success(self, obj):
+        return obj.last_run_successful
+    job_success.short_description = _(u'OK')
+    job_success.boolean = True
+    
+    def run_button(self, obj):
+        on_click = "window.location='%d/run/?inline=1';" % obj.id
+        return '<input type="button" onclick="%s" value="Run" />' % on_click
+    run_button.allow_tags = True
+    run_button.short_description = 'Run'
+    
+    def view_logs_button(self, obj):
+        on_click = "window.location='../log/?job=%d';" % obj.id
+        return '<input type="button" onclick="%s" value="View Logs" />' % on_click
+    view_logs_button.allow_tags = True
+    view_logs_button.short_description = 'Logs'
     
     def run_job_view(self, request, pk):
         """
@@ -49,18 +77,24 @@ class JobAdmin(admin.ModelAdmin):
         except Job.DoesNotExist:
             raise Http404
         job.run(save=False)
-        request.user.message_set.create(message=_('The job "%(job)s" was run successfully.') % {'job': job})        
-        return HttpResponseRedirect(request.path + "../")
+        request.user.message_set.create(message=_('The job "%(job)s" was run successfully.') % {'job': job})
+        
+        if 'inline' in request.GET:
+            redirect = request.path + '../../'
+        else:
+            redirect = request.REQUEST.get('next', request.path + "../")
+        
+        return HttpResponseRedirect(redirect)
     
     def get_urls(self):
         urls = super(JobAdmin, self).get_urls()
         my_urls = patterns('',
-            url(r'^(.+)/run/$', self.admin_site.admin_view(self.run_job_view), name="chronograph_job_run")
+            url(r'^(.+)/run/$', self.admin_site.admin_view(self.run_job_view), name="chronograph_job_run"),
         )
         return my_urls + urls
 
 class LogAdmin(admin.ModelAdmin):
-    list_display = ('job_name', 'run_date',)
+    list_display = ('job_name', 'run_date', 'job_success', 'output', 'errors', )
     search_fields = ('stdout', 'stderr', 'job__name', 'job__command')
     date_hierarchy = 'run_date'
     fieldsets = (
@@ -73,8 +107,27 @@ class LogAdmin(admin.ModelAdmin):
     )
     
     def job_name(self, obj):
-      return obj.job.name
+        return obj.job.name
     job_name.short_description = _(u'Name')
+    
+    def job_success(self, obj):
+        return obj.success
+    job_success.short_description = _(u'OK')
+    job_success.boolean = True
+    
+    def output(self, obj):
+        result = obj.stdout or ''
+        if len(result) > 40:
+            result = result[:40] + '...'
+        
+        return result or '(No output)'
+    
+    def errors(self, obj):
+        result = obj.stderr or ''
+        if len(result) > 40:
+            result = result[:40] + '...'
+        
+        return result or '(No errors)'
     
     def has_add_permission(self, request):
         return False
