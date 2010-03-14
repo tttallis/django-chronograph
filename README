@@ -1,4 +1,13 @@
-===========
+======================
+My Fork of Chronograph
+======================
+
+So far, the change log includes:
+ - A `last_run_sucessful` flag on the Job model
+ - A `success` flag on the Log model
+ - A `subscribers` field on the Job model (ManyToMany with django.contrib.auth.models.User)
+ - Whenever a job is run, all subscribers are e-mailed
+
 Chronograph
 ===========
 
