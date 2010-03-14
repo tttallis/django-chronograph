@@ -1,0 +1,10 @@
+# Compiled Python and backup files
+*.py[co]
+*~
+
+# Easy Install stuff
+build
+dist
+*.egg-info
+*.egg
+
