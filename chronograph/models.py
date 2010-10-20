@@ -264,7 +264,7 @@ class Log(models.Model):
         ordering = ('-run_date',)
 
     def __unicode__(self):
-        return u"%s - %s" % (self.job.name, self.run_date)
+        return u"%s" % self.job.name
 
     def email_subscribers(self):
         subscribers = []
