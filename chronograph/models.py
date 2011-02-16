@@ -168,17 +168,17 @@ class Job(models.Model):
             self.next_run = self.rrule.after(run_date)
             self.save()
 
-        # If we got any output, save it to the log
+        # Create a log entry no matter what to see the last time the Job ran:
+        log = Log.objects.create(
+            job = self,
+            run_date = run_date,
+            stdout = stdout_str,
+            stderr = stderr_str,
+            success = self.last_run_successful,
+        )
+        
+        # If there was any output, e-mail it to any subscribers:
         if stdout_str or stderr_str:
-            log = Log.objects.create(
-                job = self,
-                run_date = run_date,
-                stdout = stdout_str,
-                stderr = stderr_str,
-                success = self.last_run_successful,
-            )
-
-            # Email the log output to any subscribers:
             log.email_subscribers()
 
     def run_management_command(self):
