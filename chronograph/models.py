@@ -178,12 +178,14 @@ class Job(models.Model):
             success = self.last_run_successful,
         )
         
-        # If there was any output to stderr, e-mail it to any error (defualt) subscribers:
+        # If there was any output to stderr, e-mail it to any error (defualt) subscribers.
+        # We'll assume that if there was any error output, even if there was also info ouput
+        # That an error exists and needs to be dealt with
         if stderr_str:
             log.email_subscribers()
 
-        # If there was any output to stdout, e-mail it to any info subscribers:
-        if stdout_str:
+        # Otherwise - if there was only output to stdout, e-mail it to any info subscribers
+        elif stdout_str:
             log.email_subscribers(is_info=True)
 
     def run_management_command(self):
@@ -282,11 +284,26 @@ class Log(models.Model):
         for user in subscriber_set:
             subscribers.append('"%s" <%s>' % (user.get_full_name(), user.email))
 
+
+        message_body = """
+********************************************************************************
+JOB NAME: %s
+RUN DATE: %s
+********************************************************************************
+
+
+INFORMATIONAL OUTPUT:
+%s
+ERROR OUTPUT:
+%s
+""" % (self.job.name, self.run_date, self.stdout, self.stderr)
+
         send_mail(
             from_email = '"%s" <%s>' % (settings.EMAIL_SENDER, settings.EMAIL_HOST_USER),
             subject = '%s' % self,
             recipient_list = subscribers,
-            message = "Ouput:\n%s\nError output:\n%s" % (self.stdout, self.stderr)
+            #essage = "Ouput:\n%s\nError output:\n%s" % (self.stdout, self.stderr)
+            message = message_body
         )
 
 def _escape_shell_command(command):
