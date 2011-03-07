@@ -53,7 +53,8 @@ class Job(models.Model):
     last_run = models.DateTimeField(_("last run"), editable=False, blank=True, null=True)
     is_running = models.BooleanField(_("Running?"), default=False, editable=False)
     last_run_successful = models.BooleanField(default=True, blank=False, null=False, editable=False)
-    subscribers = models.ManyToManyField(User, blank=True)
+    info_subscribers = models.ManyToManyField(User, related_name='info_subscribers_set', blank=True)
+    subscribers = models.ManyToManyField(User, related_name='error_subscribers_set', blank=True)
 
     objects = JobManager()
 

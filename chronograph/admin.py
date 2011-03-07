@@ -62,7 +62,7 @@ class JobAdmin(admin.ModelAdmin):
     )
     list_display_links = ('name', )
     list_filter = ('last_run_successful', 'frequency', 'disabled')
-    filter_horizontal = ('subscribers',)
+    filter_horizontal = ('info_subscribers', 'subscribers',)
     search_fields = ('name', )
     ordering = ('last_run', )
     
@@ -73,7 +73,7 @@ class JobAdmin(admin.ModelAdmin):
         }),
         ('E-mail subscriptions', {
             'classes': ('wide',),
-            'fields': ('subscribers',)
+            'fields': ('info_subscribers', 'subscribers',)
         }),
         ('Frequency options', {
             'classes': ('wide',),
