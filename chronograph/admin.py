@@ -7,6 +7,7 @@ from django.conf.urls.defaults import patterns, url
 from django.core.urlresolvers import reverse
 from django.utils.safestring import mark_safe
 from django.forms.util import flatatt
+from django.forms import Textarea
 from django.utils.html import escape
 from django.utils.text import capfirst
 from django.utils import dateformat
@@ -32,6 +33,11 @@ class HTMLWidget(forms.Widget):
 class JobForm(forms.ModelForm):
     class Meta:
         model = Job
+        widgets = {
+            'command': Textarea(attrs={'cols': 80, 'rows': 6}),
+            'shell_command': Textarea(attrs={'cols': 80, 'rows': 6}),
+            'args': Textarea(attrs={'cols': 80, 'rows': 6}),
+        }
 
     def clean_shell_command(self):
         if self.cleaned_data.get('command', '').strip() and \
