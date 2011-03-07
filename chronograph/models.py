@@ -178,9 +178,13 @@ class Job(models.Model):
             success = self.last_run_successful,
         )
         
-        # If there was any output, e-mail it to any subscribers:
-        if stdout_str or stderr_str:
+        # If there was any output to stderr, e-mail it to any error (defualt) subscribers:
+        if stderr_str:
             log.email_subscribers()
+
+        # If there was any output to stdout, e-mail it to any info subscribers:
+        if stdout_str:
+            log.email_subscribers(is_info=True)
 
     def run_management_command(self):
         """
@@ -267,9 +271,15 @@ class Log(models.Model):
     def __unicode__(self):
         return u"%s" % self.job.name
 
-    def email_subscribers(self):
+    def email_subscribers(self, is_info=False):
         subscribers = []
-        for user in self.job.subscribers.all():
+
+        if is_info:
+            subscriber_set = self.job.info_subscribers.all()
+        else:
+            subscriber_set = self.job.subscribers.all()
+
+        for user in subscriber_set:
             subscribers.append('"%s" <%s>' % (user.get_full_name(), user.email))
 
         send_mail(
