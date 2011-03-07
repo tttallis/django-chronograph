@@ -162,6 +162,7 @@ class Job(models.Model):
                 stdout_str, stderr_str = self.run_management_command()
         finally:
             self.is_running = False
+            end_date = datetime.now()
             self.save()
 
         if save:
@@ -173,6 +174,7 @@ class Job(models.Model):
         log = Log.objects.create(
             job = self,
             run_date = run_date,
+            end_date = end_date,
             stdout = stdout_str,
             stderr = stderr_str,
             success = self.last_run_successful,
@@ -263,6 +265,7 @@ class Log(models.Model):
     """
     job = models.ForeignKey(Job)
     run_date = models.DateTimeField(auto_now_add=True)
+    end_date = models.DateTimeField(auto_now_add=True, null=True)
     stdout = models.TextField(blank=True)
     stderr = models.TextField(blank=True)
     success = models.BooleanField(default=True, editable=False)
