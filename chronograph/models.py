@@ -161,6 +161,8 @@ class Job(models.Model):
             else:
                 stdout_str, stderr_str = self.run_management_command()
         finally:
+            # If stderr was written the job is not successful
+            self.last_run_successful = not bool(stderr_str)
             self.is_running = False
             self.save()
 
@@ -210,7 +212,6 @@ class Job(models.Model):
 
         try:
             call_command(self.command, *args, **options)
-            self.last_run_successful = True
         except Exception, e:
             exception_str = self._get_exception_string(e, sys.exc_info())
             self.last_run_successful = False
