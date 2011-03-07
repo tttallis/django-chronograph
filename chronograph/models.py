@@ -162,13 +162,14 @@ class Job(models.Model):
                 stdout_str, stderr_str = self.run_management_command()
         finally:
             self.is_running = False
-            end_date = datetime.now()
             self.save()
 
         if save:
             self.last_run = run_date
             self.next_run = self.rrule.after(run_date)
             self.save()
+
+        end_date = datetime.now()
 
         # Create a log entry no matter what to see the last time the Job ran:
         log = Log.objects.create(
@@ -264,8 +265,8 @@ class Log(models.Model):
     A record of stdout and stderr of a ``Job``.
     """
     job = models.ForeignKey(Job)
-    run_date = models.DateTimeField(auto_now_add=True)
-    end_date = models.DateTimeField(auto_now_add=True, null=True)
+    run_date = models.DateTimeField()
+    end_date = models.DateTimeField(null=True)
     stdout = models.TextField(blank=True)
     stderr = models.TextField(blank=True)
     success = models.BooleanField(default=True, editable=False)
@@ -275,6 +276,12 @@ class Log(models.Model):
 
     def __unicode__(self):
         return u"%s" % self.job.name
+
+    def get_duration(self):
+        if self.end_date:
+            return self.end_date - self.run_date;
+        else:
+            return None
 
     def email_subscribers(self, is_info=False):
         subscribers = []

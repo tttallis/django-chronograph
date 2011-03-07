@@ -142,7 +142,7 @@ class JobAdmin(admin.ModelAdmin):
         return my_urls + urls
 
 class LogAdmin(admin.ModelAdmin):
-    list_display = ('job_name', 'run_date', 'end_date', 'job_success', 'output', 'errors', )
+    list_display = ('job_name', 'run_date', 'end_date', 'job_duration', 'job_success', 'output', 'errors', )
     search_fields = ('stdout', 'stderr', 'job__name', 'job__command')
     date_hierarchy = 'run_date'
     fieldsets = (
@@ -154,6 +154,10 @@ class LogAdmin(admin.ModelAdmin):
         }),
     )
     
+    def job_duration(self, obj):
+        return "%s" % (obj.get_duration())
+    job_duration.short_description = _(u'Duration')
+
     def job_name(self, obj):
         return obj.job.name
     job_name.short_description = _(u'Name')
