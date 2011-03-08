@@ -300,14 +300,21 @@ class Log(models.Model):
 ********************************************************************************
 JOB NAME: %s
 RUN DATE: %s
+END DATE: %s
+SUCCESSFUL: %s
 ********************************************************************************
 
 
-INFORMATIONAL OUTPUT:
+********************************************************************************
+INFORMATIONAL OUTPUT
+********************************************************************************
 %s
-ERROR OUTPUT:
+
+********************************************************************************
+ERROR OUTPUT
+********************************************************************************
 %s
-""" % (self.job.name, self.run_date, self.stdout, self.stderr)
+""" % (self.job.name, self.run_date, self.end_date, self.success, self.stdout, self.stderr)
 
         send_mail(
             from_email = '"%s" <%s>' % (settings.EMAIL_SENDER, settings.EMAIL_HOST_USER),
