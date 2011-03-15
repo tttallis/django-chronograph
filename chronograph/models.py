@@ -66,7 +66,7 @@ class Job(models.Model):
             return _(u"%(name)s - disabled") % {'name': self.name}
         return u"%s - %s" % (self.name, self.timeuntil)
 
-    def save(self, force_insert=False, force_update=False):
+    def save(self, *args, **kwargs):
         if not self.disabled:
             if not self.last_run:
                 self.last_run = datetime.now()
@@ -75,7 +75,7 @@ class Job(models.Model):
         else:
             self.next_run = None
 
-        super(Job, self).save(force_insert, force_update)
+        super(Job, self).save(*args, **kwargs)
 
     def get_timeuntil(self):
         """
@@ -341,3 +341,10 @@ def _escape_shell_command(command):
     for n in ('`', '$', '"'):
         command = command.replace(n, '\%s' % n)
     return command
+
+# convenience function
+def schedule_single_job(eta, command, argstring=''):
+    now = datetime.now()
+    if eta > now:
+        return Job.objects.get_or_create(name=command, command=command, args=argstring, next_run=eta)
+    return False
