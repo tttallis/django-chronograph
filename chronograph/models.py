@@ -191,15 +191,15 @@ class Job(models.Model):
             success = self.last_run_successful,
         )
         
-#         # If there was any output to stderr, e-mail it to any error (defualt) subscribers.
-#         # We'll assume that if there was any error output, even if there was also info output
-#         # That an error exists and needs to be dealt with
-#         if stderr_str:
-#             log.email_subscribers()
-# 
-#         # Otherwise - if there was only output to stdout, e-mail it to any info subscribers
-#         elif stdout_str:
-#             log.email_subscribers(is_info=True)
+        # If there was any output to stderr, e-mail it to any error (defualt) subscribers.
+        # We'll assume that if there was any error output, even if there was also info output
+        # That an error exists and needs to be dealt with
+        if stderr_str:
+            log.email_subscribers()
+
+        # Otherwise - if there was only output to stdout, e-mail it to any info subscribers
+        elif stdout_str:
+            log.email_subscribers(is_info=True)
 
     def run_management_command(self):
         """
@@ -292,50 +292,50 @@ class Log(models.Model):
         else:
             return None
 
-#     def email_subscribers(self, is_info=False):
-#         subscribers = []
-# 
-#         if is_info:
-#             subscriber_set = self.job.info_subscribers.all()
-#         else:
-#             subscriber_set = self.job.subscribers.all()
-# 
-#         for user in subscriber_set:
-#             subscribers.append('"%s" <%s>' % (user.get_full_name(), user.email))
-# 
-# 
-#         message_body = u"""
-# ********************************************************************************
-# JOB NAME: %(job_name)s
-# RUN DATE: %(run_date)s
-# END DATE: %(end_date)s
-# SUCCESSFUL: %(success)s
-# ********************************************************************************
-# 
-# 
-# ********************************************************************************
-# INFORMATIONAL OUTPUT
-# ********************************************************************************
-# %(info_output)s
-# 
-# ********************************************************************************
-# ERROR OUTPUT
-# ********************************************************************************
-# %(error_output)s
-# """ % { 'job_name': self.job.name,
-#         'run_date': self.run_date,
-#         'end_date': self.end_date,
-#         'success': self.success,
-#         'info_output': self.stdout,
-#         'error_output': self.stderr, }
-# 
-#         send_mail(
-#             from_email = '"%s" <%s>' % (settings.EMAIL_SENDER, settings.EMAIL_HOST_USER),
-#             subject = '%s' % self,
-#             recipient_list = subscribers,
-#             #essage = "Ouput:\n%s\nError output:\n%s" % (self.stdout, self.stderr)
-#             message = message_body
-#         )
+    def email_subscribers(self, is_info=False):
+        subscribers = []
+
+        if is_info:
+            subscriber_set = self.job.info_subscribers.all()
+        else:
+            subscriber_set = self.job.subscribers.all()
+
+        for user in subscriber_set:
+            subscribers.append('"%s" <%s>' % (user.get_full_name(), user.email))
+
+
+        message_body = u"""
+********************************************************************************
+JOB NAME: %(job_name)s
+RUN DATE: %(run_date)s
+END DATE: %(end_date)s
+SUCCESSFUL: %(success)s
+********************************************************************************
+
+
+********************************************************************************
+INFORMATIONAL OUTPUT
+********************************************************************************
+%(info_output)s
+
+********************************************************************************
+ERROR OUTPUT
+********************************************************************************
+%(error_output)s
+""" % { 'job_name': self.job.name,
+        'run_date': self.run_date,
+        'end_date': self.end_date,
+        'success': self.success,
+        'info_output': self.stdout,
+        'error_output': self.stderr, }
+
+        send_mail(
+            from_email = '"%s" <%s>' % (settings.EMAIL_SENDER, settings.EMAIL_HOST_USER),
+            subject = '%s' % self,
+            recipient_list = subscribers,
+            #essage = "Ouput:\n%s\nError output:\n%s" % (self.stdout, self.stderr)
+            message = message_body
+        )
 
 def _escape_shell_command(command):
     for n in ('`', '$', '"'):
