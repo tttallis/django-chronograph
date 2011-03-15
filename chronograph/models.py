@@ -38,7 +38,7 @@ class Job(models.Model):
     A recurring ``django-admin`` command to be run.
     """
     name = models.CharField(_("name"), max_length=200)
-    frequency = models.CharField(_("frequency"), choices=freqs, max_length=10)
+    frequency = models.CharField(_("frequency"), choices=freqs, max_length=10, blank=True)
     params = models.TextField(_("params"), null=True, blank=True,
         help_text=_('Comma-separated list of <a href="http://labix.org/python-dateutil" target="_blank">rrule parameters</a>. e.g: interval:15'))
     command = models.CharField(_("command"), max_length=200,
@@ -70,7 +70,7 @@ class Job(models.Model):
         if not self.disabled:
             if not self.last_run:
                 self.last_run = datetime.now()
-            if not self.next_run:
+            if not self.next_run and self.frequency != '':
                 self.next_run = self.rrule.after(self.last_run)
         else:
             self.next_run = None
@@ -84,6 +84,9 @@ class Job(models.Model):
         """
         if self.disabled:
             return _('never (disabled)')
+            
+        if not self.next_run:
+            return _('never (expired)')
 
         delta = self.next_run - datetime.now()
         if delta.days < 0:
@@ -105,8 +108,10 @@ class Job(models.Model):
         """
         Returns the rrule objects for this Job.
         """
-        frequency = getattr(rrule, self.frequency, rrule.DAILY)
-        return rrule.rrule(frequency, dtstart=self.last_run, **self.get_params())
+        frequency = getattr(rrule, self.frequency)
+        if frequency:
+            return rrule.rrule(frequency, dtstart=self.last_run, **self.get_params())
+        return None
     rrule = property(get_rrule)
 
     def get_params(self):
@@ -168,7 +173,10 @@ class Job(models.Model):
 
         if save:
             self.last_run = run_date
-            self.next_run = self.rrule.after(run_date)
+            if self.frequency != '':
+                self.next_run = self.rrule.after(run_date)
+            else:
+                self.next_run = None
             self.save()
 
         end_date = datetime.now()
@@ -184,7 +192,7 @@ class Job(models.Model):
         )
         
         # If there was any output to stderr, e-mail it to any error (defualt) subscribers.
-        # We'll assume that if there was any error output, even if there was also info ouput
+        # We'll assume that if there was any error output, even if there was also info output
         # That an error exists and needs to be dealt with
         if stderr_str:
             log.email_subscribers()
