@@ -4,7 +4,7 @@ class Command( BaseCommand ):
     help = 'Deletes old job logs.'
     
     def handle( self, *args, **options ):
-        from chronograph.models import Log
+        from chronograph.models import Log, Job
         from datetime import datetime, timedelta
         if len( args ) != 2:
             print 'Command requires two argument. Unit (weeks, days, hours or minutes) and interval.'
@@ -22,3 +22,4 @@ class Command( BaseCommand ):
         kwargs = { unit: amount }
         time_ago = datetime.now() - timedelta( **kwargs )
         Log.objects.filter( run_date__lte = time_ago ).delete()
+        Job.objects.filter(next_run__isnull=True, last_run__lte = time_ago, last_run_successful=True, disabled = False).delete()
